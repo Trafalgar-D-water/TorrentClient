@@ -6,12 +6,11 @@ import bencode from 'bencode'
 import { randomBytes } from 'crypto';
 import { Buffer } from 'buffer'
 import { ActionsType } from './type/requestAction.js';
+import {TorrentParser} from './torrent-parser.js'
 
 export class TrackerManger {
     constructor(torrent){
-        const torrentFileContent = fs.readFileSync(torrent);
-        this.tracker = bencode.decode(torrentFileContent , 'utf8');
-        this.url = this.parseUrl(this.tracker.announce);
+        this.torrentParser = new TorrentParser(torrent);
         this.socket = dgram.createSocket('udp4');
     }
 
@@ -25,7 +24,7 @@ export class TrackerManger {
     }
 
     udpSendRequest( request  ,callback){
-        const url = this.parseUrl(this.tracker['announce-list'][2]);
+        const url = this.parseUrl(this.torrentParser.getMainUdpUrl());     
         this.socket.send(request , 0 , request.length , Number(url.port) , url.hostname , (err ,bytes)=>{
             if(err) throw err
         })
@@ -63,5 +62,14 @@ export class TrackerManger {
         }
 
         return parsedConnectResponse;
+    }
+
+    announceRequest(){
+
+    }
+
+
+    parseAnnounceRequest(){
+
     }
 }
