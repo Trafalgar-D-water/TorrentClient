@@ -3,7 +3,9 @@ import {Socket} from 'dgram'
 import URLParse from 'url-parse'
 import * as dgram from 'dgram';
 import bencode from 'bencode'
-
+import { randomBytes } from 'crypto';
+import { Buffer } from 'buffer'
+import { ActionsType } from './type/requestAction.js';
 
 export class TrackerManger {
     constructor(torrent){
@@ -15,23 +17,34 @@ export class TrackerManger {
 
     parseUrl(url){
         const parsedUrl = URLParse(url);
-        console.log('this is my Parsed Url : ', parsedUrl );
-
         if(!parsedUrl.port){
             parsedUrl.port = '6969';
         }
-
-        console.log(parsedUrl.port , 'portp')
-        console.log(parsedUrl.protocol, 'protocol')
 
         return parsedUrl;
     }
 
     udpSendRequest( request  ,callback){
-        console.log(this.url.port , 'port')
-        this.socket.send(request , 0 , request.length , Number(this.url.port) , this.url.hostname , (data)=>{
-            console.log('this is my data :' , data)
+        const url = this.parseUrl(this.tracker['announce-list'][2]);
+        this.socket.send(request , 0 , request.length , Number(url.port) , url.hostname , (err ,bytes)=>{
+            if(err) throw err
         })
-        this.socket.on('message' , (response)=> {callback(response)})
+        this.socket.on('error' , (err)=>{
+            console.error("socket error :" , err)
+        })
+        this.socket.on('message' , (msg , rinfo)=> {console.log("this response is :" , msg)})
+    }
+
+
+    connectRequest(){
+        const connectRequestBuffer = Buffer.allocUnsafe(16);
+
+        connectRequestBuffer.writeUInt32BE(0x417, 0)
+        connectRequestBuffer.writeUint32BE(0x27101980, 4)
+        //setting the action for connect action
+        connectRequestBuffer.writeUint32BE(ActionsType.connect, 8)
+        //generate the random transactionId
+        randomBytes(4).copy(connectRequestBuffer, 12)
+        return connectRequestBuffer
     }
 }
