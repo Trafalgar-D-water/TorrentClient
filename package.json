@@ -2,11 +2,17 @@
   "name": "torrent-recreation",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "bencode": "^2.0.2",
+    "fs": "^0.0.1-security",
+    "url-parse": "^1.5.10"
+  }
 }
