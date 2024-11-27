@@ -12,7 +12,9 @@
   "description": "",
   "dependencies": {
     "bencode": "^2.0.2",
+    "bigint-buffer": "^1.1.5",
     "fs": "^0.0.1-security",
-    "url-parse": "^1.5.10"
+    "url-parse": "^1.5.10",
+    "bignum": "^0.13.1"
   }
 }
