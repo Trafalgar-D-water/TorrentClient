@@ -13,7 +13,7 @@ export class TrackerManager {
   constructor(torrent) {
     this.torrentParser = new TorrentParser(torrent);
     this.socket = dgram.createSocket("udp4");
-    this.id = null; // Initialize id directly here
+    this.id = null; 
   }
 
   respType(resp) {
@@ -53,6 +53,7 @@ export class TrackerManager {
         callback(announceResp);
       } else if (this.respType(response) === 'error') {
         console.log('Error in the response');
+        console.log('the parsed error is :' , this.parseError(response));
       }
     });
   }
@@ -114,18 +115,15 @@ export class TrackerManager {
 
     connectRequestBuffer.writeUInt32BE(0x417, 0);
     connectRequestBuffer.writeUint32BE(0x27101980, 4);
-    // Set the action for connect
     connectRequestBuffer.writeUint32BE(ActionsType.connect, 8);
-    // Generate the random transactionId
     randomBytes(4).copy(connectRequestBuffer, 12);
-
     return connectRequestBuffer;
   }
 
   parseConnectResponse(connectResponse) {
     const action = connectResponse.readUInt32BE(0);
     const transactionId = connectResponse.readUInt32BE(4);
-    const connectionId = connectResponse.slice(8);  // Correct buffer slicing
+    const connectionId = connectResponse.slice(8);  
 
     let parsedConnectResponse = {
       action: action,
