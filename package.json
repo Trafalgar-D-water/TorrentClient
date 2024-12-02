@@ -11,10 +11,11 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "axios": "^1.7.8",
     "bencode": "^2.0.2",
     "bigint-buffer": "^1.1.5",
+    "bignum": "^0.13.1",
     "fs": "^0.0.1-security",
-    "url-parse": "^1.5.10",
-    "bignum": "^0.13.1"
+    "url-parse": "^1.5.10"
   }
 }

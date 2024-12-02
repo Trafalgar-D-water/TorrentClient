@@ -8,6 +8,8 @@ import { Buffer } from "buffer";
 import { ActionsType } from "./type/requestAction.js";
 import { TorrentParser } from "./torrent-parser.js";
 import * as crypto from "crypto";
+import {Events} from './type/event.js'
+import axios from "axios";
 
 export class TrackerManager {
   constructor(torrent) {
@@ -70,8 +72,9 @@ export class TrackerManager {
     return {
       action: resp.readUInt32BE(0),
       transactionId: resp.readUInt32BE(4),
-      leechers: resp.readUInt32BE(8),
-      seeders: resp.readUInt32BE(12),
+      interval: resp.readUInt32BE(8),
+      leechers: resp.readUint32BE(12),
+      seeders: resp.readUInt32BE(16),
       peers: group(resp.slice(20), 6).map((address) => {
         return {
           ip: address.slice(0, 4).join('.'),
@@ -90,8 +93,9 @@ export class TrackerManager {
     return parsedUrl;
   }
 
-  udpSendRequest(request) {
-    const url = this.parseUrl(this.torrentParser.mainUdpUrl);
+  udpSendRequest(request , urlTest = this.torrentParser.mainUdpUrl) {
+    const url = this.parseUrl(urlTest)
+    // const url = this.parseUrl(this.torrentParser.mainUdpUrl);
     this.socket.send(
       request,
       0,
@@ -181,5 +185,73 @@ export class TrackerManager {
       transactionId: error.readUInt32BE(4),
       message: error.readUInt32BE(8),
     };
+  }
+
+
+  async httpConnectRequest(){
+    const announceUrl  = this.torrentParser.announceUrl;
+    const parsedUrl = this.parseUrl(announceUrl);
+    const buildedUrl = this.createUrl(Events.STARTED , parsedUrl);
+    const response = await axios.get(buildedUrl , {responseType : "arraybuffer" , transformResponse : []});
+    console.log("i wish this sucess" , this.parseResp(response.data));
+  }
+
+  createUrl(event , parsedUrl){
+    let query = { 
+      info_hash : "%A6%0D%E3F%E3%9E5%F6%B5%C45q%3E%00S%A29E%3D%D1",
+      // info_hash: encodeURIComponent(this.torrentParser.infoHash.toString("binary")),
+      peer_id : "-AT0001-"  + Math.random().toString().slice(2 , 14),
+      port : parsedUrl.port || 6882,
+      uploaded : 0 , 
+      downloaded : 0 , 
+      left : this.torrentParser.size,
+      compact : 1 ,
+      event : event ? event : undefined
+    }
+
+    let url = parsedUrl.href + "?";
+    for(const key in query){
+      url += key  + '=' + query[key] + '&';
+    }
+    console.log('uuuuuuuuuuuuuuuuurl' ,  url);
+    return url;
+  }
+
+  parseResp(resp){
+    const responseInfo = bencode.decode(resp);
+    if(responseInfo["failure reason"]){
+      return {error : responseInfo["failure reason"].toString()};
+    }
+    return {
+      protocol : "http",
+      interval : responseInfo.interval,
+      leechers : responseInfo.incomplete,
+      seeders : responseInfo.complete,
+      peerList : this.getPeersList(responseInfo.peers),
+    }
+  }
+
+  getPeersList(resp){
+    let peersList = [];
+    if(Buffer.isBuffer(resp)){
+      //compact
+
+      for(let i = 0 ; i< resp.length ; i += 6){
+        peerList.push({
+          ip : resp.slice(i , i+ 4).join("."),
+          port : resp.readUInt16BE(i + 4)
+        })
+      }
+    }
+    else{
+      //no compact 
+      for(let i = 0 ; i< resp.length ; i++){
+          peersList.push({
+            ip : resp[i].ip.toString(),
+            port : resp[i].port
+          })
+      }
+    }
+    return peersList;
   }
 }
