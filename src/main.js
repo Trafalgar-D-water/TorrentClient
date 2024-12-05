@@ -1,7 +1,5 @@
-import { TrackerManager } from './tracker-manager.js';
+import {Client} from './Client.js'
 
-const trackerManager = new TrackerManager('/home/priyanshu/Desktop/workshop/torrent-recreation/src/torrent-file/t9.torrent');
-trackerManager.httpConnectRequest().then((response)=>{
-    console.log(response , 'wala')
-})
-// trackerManager.getPeers();
+const client = new Client();
+
+client.addTorrent('/home/priyanshu/Desktop/workshop/torrent-recreation/src/torrent-file/t1.torrent')
