@@ -36,35 +36,38 @@ export class Udp extends Network {
             const { port, hostname } = url;
             const socket = dgram.createSocket("udp4");
             socket.send(this.connectPayload, Number(port), hostname);
-            const resp = await new Promise((resolve, reject) => socket.on("message", (msg) => {
-                if (msg.length < 16)
-                    return reject();
-                let action = msg.readUInt32BE(0);
-                let respTransId = msg.subarray(4, 8);
-                console.log("hala message : ", msg);
-                if (this.transactionId.compare(respTransId))
-                    return reject();
-                switch (action) {
-                    case Udp.actions.CONNECT:
-                        this.connectionId = msg.subarray(8);
-                        const announcePayload = this.announcePayload(event, torrent);
-                        socket.send(announcePayload, Number(port), hostname);
-                        break;
-                    case Udp.actions.ANNOUNCE:
-                        socket.close();
-                        if (msg.length < 20)
-                            reject();
-                        const info = this.parseResponse(msg);
-                        resolve(info);
-                        break;
-                    case Udp.actions.ERROR:
-                        const err = msg.subarray(8).toString();
-                        reject(err);
-                        break;
-                    default:
-                    //logger.warn("received unknown actionId from tracker");
-                }
-            }));
+            const resp = await new Promise((resolve, reject) => {
+                const timeoutID = setTimeout(()=> reject('longcalculation took to long ') , 10000);
+                socket.on('message' , (msg)=>{
+                    if(msg.length < 16)
+                        return reject()
+                    let action  = msg.readUInt32BE(0);
+                    let respTransId = msg.subarray(4 , 8);
+                    if(this.transactionId.compare(respTransId))
+                        return reject();
+                    switch(action) {
+                        case Udp.actions.CONNECT : 
+                            this.connectionId = msg.subarray(8);
+                            const announcePayload = this.announcePayload(event , torrent);
+                            socket.send(announcePayload ,Number(port) , hostname);
+                            break;
+                        case Udp.actions.ANNOUNCE : 
+                            socket.close();
+                            if(msg.length < 20)
+                                reject()
+                            const info = this.parseResponse(msg);
+                            resolve(info)
+                            break;
+                        case Udp.actions.ERROR :
+                            const err = msg.subarray(8).toString()
+                            reject(err)
+                            break;
+                        default : 
+                    }
+                });
+            }).catch(e =>{
+                console.log("error : " , e)
+            })
             console.log("fking : ", resp);
             return resp;
         
