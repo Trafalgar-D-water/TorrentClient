@@ -5,7 +5,7 @@ export class Tracker {
         this.torrent = torrent;
         this.state = state;
         this.url = new URL(url);
-        if (this.url.protocol == "udp:") {
+        if (this.url.protocol === "udp:") {
             this.network = new Udp();
         }
         else {
