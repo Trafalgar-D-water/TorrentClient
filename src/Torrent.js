@@ -1,10 +1,13 @@
+import { Piece } from './Piece.js';
 import { Peer } from "./peer.js";
-import { Piece } from "./Piece.js";
 import { TorrentParser } from "./TorrentParser.js";
 import { Tracker } from "./Tracker.js";
 import { PeerState } from "./type/peerState.enum.js";
+import { File } from "./file.js";
+import * as fs from "fs";
+import * as path from 'path';
 export class Torrent {
-    constructor(file, clientId, port, uploaded = 0, downloaded = 0, mode = Torrent.modes.DEFAULT, pieces = [], missingPieces = {}, cb = null) {
+    constructor(file, clientId, port, uploaded = 0, downloaded = 0, mode = Torrent.modes.DEFAULT, pieces = [], missingPieces = {}, cb = null, files = []) {
         this.file = file;
         this.clientId = clientId;
         this.port = port;
@@ -14,8 +17,10 @@ export class Torrent {
         this.pieces = pieces;
         this.missingPieces = missingPieces;
         this.cb = cb;
+        this.files = files;
         this.trackers = [];
         this.peers = [];
+        this.downloadPath = "../downloads/";
         this.updateState = () => {
             let numDone = 0;
             let numActive = 0;
@@ -31,6 +36,60 @@ export class Torrent {
                 this.cb("completed");
                 //   this.shutdown();
                 console.log("i want to shutdown but it is not implemented");
+            }
+        };
+        this.createPieces = () => {
+            const { pieces, pieceLength, length } = this.metadata;
+            const n = pieces.length / 20;
+            let f = 0;
+            for (let i = 0; i < n; i++) {
+                const included = [];
+                const pend = i * pieceLength + pieceLength;
+                while (f < this.files.length) {
+                    included.push(this.files[f]);
+                    const fend = this.files[f].offset + this.files[f].length;
+                    if (pend < fend)
+                        break;
+                    else if (pend > fend)
+                        f++;
+                    else {
+                        f++;
+                        break;
+                    }
+                }
+                let len = pieceLength;
+                if (i === n - 1 && length % pieceLength !== 0) {
+                    len = length % pieceLength;
+                }
+                this.pieces.push(new Piece(i, i * pieceLength, len, pieces.slice(i * 20, i * 20 + 20), included));
+            }
+        };
+        this.createFiles = () => {
+            const dest = this.downloadPath + this.metadata.fileName;
+            if (this.metadata.files) {
+                if (!fs.existsSync(dest)) {
+                    fs.mkdirSync(dest, { recursive: true });
+                }
+                let offset = 0;
+                for (const file of this.metadata.files) {
+                    const filedir = path.join(dest, ...file.path.slice(0, file.path.length - 1));
+                    const filepath = path.join(filedir, file.path[file.path.length - 1]);
+                    if (!fs.existsSync(filedir)) {
+                        fs.mkdirSync(filedir, { recursive: true });
+                    }
+                    const f = new File(filepath, file.length, offset);
+                    f.open((err) => console.error(err));
+                    this.files.push(f);
+                    offset += file.length;
+                }
+            }
+            else {
+                if (!fs.existsSync(this.downloadPath)) {
+                    fs.mkdirSync(this.downloadPath, { recursive: true });
+                }
+                const f = new File(dest, this.metadata.length, 0);
+                f.open((err) => console.error(err));
+                this.files.push(f);
             }
         };
         this.metadata = TorrentParser.instance.parse(file);
@@ -57,8 +116,7 @@ export class Torrent {
         return this.metadata.pieces.length / 20;
     }
     async start() {
-        
-            let x = 0;
+
             if (this.metadata.announce) {
                 this.trackers.push(new Tracker(this.metadata.announce, this));
             }
@@ -84,7 +142,6 @@ export class Torrent {
                     }
                 }
             }
-        
     }
 }
 Torrent.modes = {
