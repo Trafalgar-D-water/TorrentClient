@@ -16,6 +16,9 @@
     "bigint-buffer": "^1.1.5",
     "bignum": "^0.13.1",
     "fs": "^0.0.1-security",
-    "url-parse": "^1.5.10"
+    "url-parse": "^1.5.10",
+    "bit-vec": "^1.0.4",
+    "bit-vector": "^0.1.6",
+    "bitset": "^5.1.1"
   }
 }
