@@ -11,6 +11,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "argparse": "^2.0.1",
     "axios": "^1.7.8",
     "bencode": "^2.0.2",
     "bigint-buffer": "^1.1.5",
@@ -20,6 +21,8 @@
     "bit-vec": "^1.0.4",
     "bit-vector": "^0.1.6",
     "bitset": "^5.1.1",
-    "cli-progress": "^3.12.0"
+    "cli-progress": "^3.12.0",
+      "log4js": "^6.9.1",
+    "net": "^1.0.2"
   }
 }
